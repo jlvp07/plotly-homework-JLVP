@@ -46,10 +46,12 @@ function createBarChart(index)
     //Get the sample data for the selected Subject ID index
     sampleData = globalData["samples"][index]
 
+    //Get Top 10 (first 10) of each of the required arrays
     values = sampleData["sample_values"].slice(0,10)
     otus = sampleData["otu_ids"].slice(0,10).map(x => "OTU " + x)
     labels  = sampleData["otu_labels"].slice(0,10)
 
+    //Create/setup bar chart data
         var barData = [{
             type: 'bar',
             x: values,
@@ -64,7 +66,7 @@ function createBarChart(index)
             height: 400,
             width: getDivWidth("body")*0.3,
         };
-              
+        //Pass data and layout to Plotly   
           Plotly.newPlot('bar', barData,layout);
 }
 
@@ -77,9 +79,9 @@ function createBubbleChart(index)
     labels  = sampleData["otu_labels"]
     
     desired_maximum_marker_size = 100;
-    maxVal = values[0]
+    maxVal = values[0] //The first value is always the largest
 
-    var trace1 = {
+    var data = [{
         x: otus,
         y: values,
         text: labels,
@@ -88,13 +90,12 @@ function createBubbleChart(index)
           color: otus,
           colorscale: "Rainbow",
           size: values,
+          //Makes the largest bubble a standard size and all other bubbles scaled relative to the biggest one
           sizeref: 2.0 * maxVal / (desired_maximum_marker_size**2),
             sizemode: 'area'
         }
-      };
-      
-      var data = [trace1];
-      
+      }];
+            
       var layout = {
         //title: 'Bubble Chart Hover Text',
         showlegend: false,
