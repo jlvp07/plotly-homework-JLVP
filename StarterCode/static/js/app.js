@@ -1,11 +1,13 @@
 
+//Step 1) Using D3 to read json file
 d3.json("samples.json").then(doTheThing);
 let globalData = 0
-function doTheThing(data)
+
+function doTheThing(jsonData)
 {
-    globalData = data;
+    globalData = jsonData;
     loadTestIds();
-    optionChanged(0);
+    optionChanged(0); //Loads all charts for the first Subject ID
 }
 
 function loadTestIds()
@@ -13,11 +15,11 @@ function loadTestIds()
     var select = d3.select("#selDataset")
     
     select.selectAll("option")
-    .data(globalData["names"])
+    .data(globalData["names"]) //Take all of these name values (940,941,942,etc.)
     .enter()
-      .append("option")
-      .attr("value", function (v,i) { return i; })
-      .text(function (v,i) { return v; });
+      .append("option") //... and create a new option for each of them
+      .attr("value", function (v,i) { return i; }) //Using the index as the value
+      .text(function (v,i) { return v; }); //...and the value as the option text
 }
 
 function optionChanged(index)
@@ -35,12 +37,13 @@ function loadDemographics(index)
     var meta = d3.select("#sample-metadata")
     
     meta.selectAll("p")
-    .data(d3.keys(sampleData))
-    .text(function (v,k) { return v + ": " + sampleData[v]; });
+    .data(d3.keys(sampleData)) //Convert keys in samplesData to array
+    .text(function (v,k) { return v + ": " + sampleData[v]; }); //Print keys and their values
 }
 
 function createBarChart(index)
 {
+    //Get the sample data for the selected Subject ID index
     sampleData = globalData["samples"][index]
 
     values = sampleData["sample_values"].slice(0,10)
@@ -55,8 +58,14 @@ function createBarChart(index)
             orientation: 'h'
           }];
           
-          Plotly.newPlot('bar', barData);
-
+          var layout = {
+            //title: 'Bubble Chart Hover Text',
+            showlegend: false,
+            height: 400,
+            width: getDivWidth("body")*0.3,
+        };
+              
+          Plotly.newPlot('bar', barData,layout);
 }
 
 function createBubbleChart(index)
@@ -65,26 +74,32 @@ function createBubbleChart(index)
 
     values = sampleData["sample_values"]
     otus = sampleData["otu_ids"]
-    labels  = sampleData["otu_labels"].slice(0,10)
+    labels  = sampleData["otu_labels"]
     
+    desired_maximum_marker_size = 100;
+    maxVal = values[0]
+
     var trace1 = {
-        x: [1, 2, 3, 4],
-        y: [10, 11, 12, 13],
-        text: ['A<br>size: 40', 'B<br>size: 60', 'C<br>size: 80', 'D<br>size: 100'],
+        x: otus,
+        y: values,
+        text: labels,
         mode: 'markers',
         marker: {
-          color: ['rgb(93, 164, 214)', 'rgb(255, 144, 14)',  'rgb(44, 160, 101)', 'rgb(255, 65, 54)'],
-          size: [40, 60, 80, 100]
+          color: otus,
+          colorscale: "Rainbow",
+          size: values,
+          sizeref: 2.0 * maxVal / (desired_maximum_marker_size**2),
+            sizemode: 'area'
         }
       };
       
       var data = [trace1];
       
       var layout = {
-        title: 'Bubble Chart Hover Text',
+        //title: 'Bubble Chart Hover Text',
         showlegend: false,
         height: 600,
-        width: 600
+        width: getDivWidth("body")*0.7
       };
       
       Plotly.newPlot('bubble', data, layout);
@@ -98,12 +113,18 @@ function createGauge(index)
         {
           domain: { x: [0, 1], y: [0, 1] },
           value: sampleData["wfreq"],
-          title: { text: "Speed" },
+          title: { 
+              text: "Scrubs Per Week",
+              font:{
+                size: 28,
+                }
+            },
           type: "indicator",
-          mode: "gauge",
+          mode: "gauge+number",
           gauge: {
             axis: { range: [null, 9] },
             ticks:"",
+            bar: { color: "blue" },
             steps: [
               { range: [0, 1], color: "rgb(250,50,0)",text: "0-1" },
               { range: [1, 2], color: "rgb(250,100,0)" },
@@ -116,7 +137,7 @@ function createGauge(index)
               { range: [8, 9], color: "rgb(50,250,0)"},
             ],
             threshold: {
-              line: { color: "green", width: 4 },
+              line: { color: "blue", width: 4 },
               thickness: 0.75,
               value: sampleData["wfreq"]
             }
@@ -124,6 +145,22 @@ function createGauge(index)
         }
       ];
       
-      var layout = { width: 600, height: 450, margin: { t: 0, b: 0 } };
+      var layout = { 
+          width: getDivWidth("body") * 0.3, 
+          height: 450,
+          margin: { t:0}
+        };
       Plotly.newPlot('gauge', data, layout);
 }
+
+//Helper function to get body width
+// get the dom element width
+function getDivWidth (div) {
+    var width = d3.select(div)
+      // get the width of div element
+      .style('width')
+      // take of 'px'
+      .slice(0, -2)
+    // return as an integer
+    return Math.round(Number(width))
+  }
